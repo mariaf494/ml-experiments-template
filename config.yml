@@ -1,32 +1,42 @@
 estimator:
-  - name: age-extractor
-    params: {}
-  - name: categorical-encoder
+  - name: catboost
     params:
-      one_hot: false
-      force_dense_array: true
-      additional_pass_through_columns:
-        - HouseAge
-        - RemodAddAge
-        - GarageAge
-  - name: random-forest-regressor
-    params: {}
+        iterations: 4000
+        depth: 13
+        l2_leaf_reg: 1
+        random_seed: 123
+  # - name: categorical-encoder
+  #   params:
+  #     one_hot: true
+  #     force_dense_array: false
+  #     additional_pass_through_columns:
+  #- name: standard-scaler
+  #  params: {}
+  #- name: ridge-regressor
+  #  params: {}
+  # - name: random-forest-regressor
+  #   params: {}
 
 data:
-  filepath: ./dataset.csv
+  filepath: ./df_1.csv
 
 metrics:
-  - name: mean absolute error
+  - name: custom prediction error
     params: {}
 
 search:
   jobs: -1
   grid:
-    - name: random-forest-regressor
+    # - name: random-forest-regressor
+    #   params:
+    #     max_features: ["auto", "sqrt", "log2", null, 1.0, 0.5]
+    #     max_depth: [null, 2, 4, 8, 18, 32, 64, 128, 256]
+    #     n_estimators: [2, 4, 8, 16, 32, 64, 128, 256, 512]
+    - name: ridge-regressor
       params:
-        max_features: ["auto", "sqrt", "log2", null, 20, 30, 40, 50, 60]
-        max_depth: [null, 2, 4, 8, 18, 32, 64, 128, 256]
-        n_estimators: [2, 4, 8, 16, 32, 64, 128, 256, 512]
+        alpha: [1.0, 2.0, 3.0, 4.0, 4.2, 4.4,4.6,4.8, 5.0]
+        solver: ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga']
+
 
 export:
   output_dir: ./models

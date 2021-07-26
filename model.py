@@ -6,6 +6,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
+
 from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.preprocessing import PolynomialFeatures, KBinsDiscretizer
 from sklearn.compose import ColumnTransformer
@@ -14,6 +15,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
+from catboost import Pool, CatBoostRegressor
 
 import data
 
@@ -39,12 +41,13 @@ def get_estimator_mapping():
         "decision-tree-regressor": DecisionTreeRegressor,
         "linear-regressor": LinearRegression,
         "ridge-regressor": Ridge,
-        "average-price-per-neighborhood-regressor": AveragePricePerNeighborhoodRegressor,
-        "age-extractor": AgeExtractor,
+        # "average-sells-per-price-regressor": AveragePricePerPriceRegressor,
+        # "age-extractor": AgeExtractor,
         "categorical-encoder": CategoricalEncoder,
         "standard-scaler": StandardScaler,
         "discretizer": Discretizer,
-        "averager": AveragePricePerNeighborhoodExtractor,
+        "catboost": CatBoostRegressor
+        # "averager": AveragePricePerNeighborhoodExtractor,
     }
 
 
@@ -115,7 +118,8 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         one_hot: bool = False,
         force_dense_array: bool = False,
         additional_pass_through_columns: t.Optional[t.Sequence[str]] = None,
-        additional_categories: t.Optional[t.Mapping[str, t.Sequence[str]]] = None,
+        additional_categories: t.Optional[t.Mapping[str,
+                                                    t.Sequence[str]]] = None,
         to_ignore: t.Optional[t.Sequence[str]] = None,
     ):
         self.one_hot = one_hot
@@ -131,7 +135,8 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         self.categorical_column_names_, self.categories_ = self._get_categories_params()
         self.pass_through_columns_ = self._get_pass_through_columns()
         encoder_cls = (
-            partial(OneHotEncoder, drop="first", sparse=not self.force_dense_array)
+            partial(OneHotEncoder, drop="first",
+                    sparse=not self.force_dense_array)
             if self.one_hot
             else OrdinalEncoder
         )
@@ -167,12 +172,14 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         return categorical_column_names, categories
 
     def _get_pass_through_columns(self):
-        pass_through_columns = data.get_numeric_column_names()
+        pass_through_columns = data.get_numeric_column_names(
+            'modelcols_1.json')
         if self.additional_pass_through_columns is not None:
             pass_through_columns = (
                 pass_through_columns + self.additional_pass_through_columns
             )
-        to_ignore = set(self.to_ignore) if self.to_ignore is not None else set()
+        to_ignore = set(
+            self.to_ignore) if self.to_ignore is not None else set()
         if self.additional_categories is not None:
             to_ignore = to_ignore.union(self.additional_categories.keys())
         pass_through_columns = tuple(

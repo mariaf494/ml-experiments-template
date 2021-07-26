@@ -14,8 +14,8 @@ def custom_error(
     y_true,
     y_pred,
     *,
-    overflow_cost: float = 0.7,
-    underflow_cost: float = 0.3,
+    overflow_cost: float = 0.6,
+    underflow_cost: float = 0.4,
     aggregate: bool = True
 ):
     """A custom metric that is related to the business, the lower the better."""

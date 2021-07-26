@@ -14,6 +14,7 @@ import yaml
 import joblib
 from sklearn.base import BaseEstimator
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import GridSearchCV
 
 import data
@@ -27,9 +28,15 @@ app = typer.Typer()
 def train(config_file: str):
     estimator_config = _load_config(config_file, "estimator")
     split = "train"
-    X, y = _get_dataset(_load_config(config_file, "data"), splits=[split])[split]
+    X, y = _get_dataset(_load_config(config_file, "data"),
+                        splits=[split])[split]
     estimator = model.build_estimator(estimator_config)
-    estimator.fit(X, y)
+    if estimator.named_steps['catboost']:
+        estimator = estimator.named_steps['catboost']
+        estimator.fit(
+            X, y, cat_features=data.get_categorical_column_names('modelcols_1.json'))
+    else:
+        estimator.fit(X, y)
     output_dir = _load_config(config_file, "export")["output_dir"]
     _save_versioned_estimator(estimator, estimator_config, output_dir)
 
@@ -54,7 +61,46 @@ def _save_versioned_estimator(
         shutil.rmtree(model_dir)
 
 
-@app.command()
+class CustomCrossValidation:
+    @classmethod
+    def split(cls,
+              X: pd.DataFrame,
+              y: np.ndarray = None,
+              groups: np.ndarray = None):
+        """Returns to a grouped time series split generator."""
+        assert len(X) == len(groups),  (
+            "Length of the predictors is not"
+            "matching with the groups.")
+        # The min max index must be sorted in the range
+        for group_idx in range(groups.min(), groups.max()):
+            training_group = group_idx
+            # Gets the next group right after
+            # the training as test
+            test_group = group_idx + 2
+            training_indices = np.where(groups == training_group)[0]
+            test_indices = np.where(groups == test_group)[0]
+            if len(test_indices) > 0:
+                # Yielding to training and testing indices
+                # for cross-validation generator
+                yield training_indices, test_indices
+
+
+def _load_dataset(data_config):
+    filepath = data_config["filepath"]
+    return pd.read_csv(filepath, index_col=0, encoding='utf-8').reset_index()
+
+
+def define_x_y_groups(df):
+    map_dict = {}
+    for i, camp in enumerate(df.AÑO_CAMPAÑA.unique()):
+        map_dict[camp] = i
+    groups = df.AÑO_CAMPAÑA.map(map_dict)
+    y = df.CANTPED
+    X = df.drop(['CANTPED', "AÑO_CAMPAÑA"], axis=1)
+    return X, y, groups
+
+
+@ app.command()
 def find_hyperparams(
     config_file: str,
 ):
@@ -65,15 +111,24 @@ def find_hyperparams(
     estimator_config = _load_config(config_file, "estimator")
     estimator = model.build_estimator(estimator_config)
     scoring = metrics.get_scoring_function(metric["name"], **metric["params"])
+
+    split = "train"
+    df = _load_dataset(_load_config(config_file, "data"))
+
+    X, y, groups = define_x_y_groups(df)
+    custom_splitter = CustomCrossValidation.split(
+        X=X,
+        y=y,
+        groups=groups)
+
     gs = GridSearchCV(
         estimator,
         _param_grid_to_sklearn_format(param_grid),
         n_jobs=n_jobs,
         scoring=scoring,
         verbose=3,
-    )
-    split = "train"
-    X, y = _get_dataset(_load_config(config_file, "data"), splits=[split])[split]
+        cv=custom_splitter)
+
     gs.fit(X, y)
     estimator_config = _param_grid_to_custom_format(gs.best_params_)
     estimator = gs.best_estimator_
@@ -98,15 +153,18 @@ def _param_grid_to_custom_format(param_grid):
             grid[estimator_name] = {}
         grid[estimator_name][param_name] = values
     result = grid
-    result = [{"name": name, "hparams": params} for name, params in grid.items()]
+    result = [{"name": name, "hparams": params}
+              for name, params in grid.items()]
     return result
 
 
-@app.command()
+@ app.command()
 def eval(
     config_file: str,
     model_version: str,
     splits: t.List[str] = ["test"],
+
+
 ):
     output_dir = _load_config(config_file, "export")["output_dir"]
     saved_model = os.path.join(output_dir, model_version, "model.joblib")
@@ -135,7 +193,7 @@ def _load_config(filepath: str, key: str):
     return config
 
 
-@lru_cache(None)
+@ lru_cache(None)
 def _load_yaml(filepath: str) -> t.Dict[str, t.Any]:
     with open(filepath, "r") as f:
         content = yaml.load(f)
