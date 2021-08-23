@@ -1,21 +1,29 @@
 estimator:
-  - name: catboost
+  #- name: catboost
+  #  params:
+  #      iterations: 4000
+  #      depth: 13
+  #      l2_leaf_reg: 1
+  #      random_seed: 123
+
+  - name: categorical-encoder
     params:
-        iterations: 4000
-        depth: 13
-        l2_leaf_reg: 1
-        random_seed: 123
-  # - name: categorical-encoder
-  #   params:
-  #     one_hot: true
-  #     force_dense_array: false
-  #     additional_pass_through_columns:
-  #- name: standard-scaler
+      one_hot: true
+      force_dense_array: false
+      #additional_pass_through_columns:
+  - name: standard-scaler
+    params: {}
+  #- name: linear-regressor
   #  params: {}
   #- name: ridge-regressor
-  #  params: {}
-  # - name: random-forest-regressor
-  #   params: {}
+  #  params:
+  #    alpha: 4.8
+  #    solver: saga
+  - name: random-forest-regressor
+    params:
+      max_depth: 256
+      max_features: log2
+      n_estimators: 512
 
 data:
   filepath: ./df_1.csv
@@ -27,15 +35,15 @@ metrics:
 search:
   jobs: -1
   grid:
-    # - name: random-forest-regressor
-    #   params:
-    #     max_features: ["auto", "sqrt", "log2", null, 1.0, 0.5]
-    #     max_depth: [null, 2, 4, 8, 18, 32, 64, 128, 256]
-    #     n_estimators: [2, 4, 8, 16, 32, 64, 128, 256, 512]
-    - name: ridge-regressor
-      params:
-        alpha: [1.0, 2.0, 3.0, 4.0, 4.2, 4.4,4.6,4.8, 5.0]
-        solver: ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga']
+     - name: random-forest-regressor
+       params:
+         max_features: ["auto", "sqrt", "log2", null, 1.0, 0.5]
+         max_depth: [null, 2, 4, 8, 18, 32, 64, 128, 256]
+         n_estimators: [2, 4, 8, 16, 32, 64, 128, 256, 512]
+    #- name: ridge-regressor
+    #  params:
+    #    alpha: [1.0, 2.0, 3.0, 4.0, 4.2, 4.4,4.6,4.8, 5.0]
+    #    solver: ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga']
 
 
 export:

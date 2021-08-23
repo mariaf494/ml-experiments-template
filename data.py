@@ -22,7 +22,7 @@ SplitName = te.Literal["train", "test"]
 def get_dataset(reader: DatasetReader, splits: t.Iterable[SplitName]):
     df = reader()
     #df = clean_dataset(df)
-
+    print(df.columns)
     y = df["CANTPED"]
     X = df.drop(columns=['CANTPED', "AÑO_CAMPAÑA"])
     X = X.astype(
@@ -58,10 +58,6 @@ def clean_dataset(df: pd.DataFrame) -> pd.DataFrame:
             _fix_pool_quality,
             _fix_misc_feature,
             _fix_fireplace_quality,
-            _fix_garage_variables,
-            _fix_lot_frontage,
-            _fix_alley,
-            _fix_fence,
             _fix_masvnr_variables,
             _fix_electrical,
             _fix_basement_variables,
@@ -120,64 +116,6 @@ def _fix_fireplace_quality(df):
     return df
 
 
-def _fix_garage_variables(df):
-    num_area_zeros = (df["GarageArea"] == 0).sum()
-    num_cars_zeros = (df["GarageCars"] == 0).sum()
-    num_both_zeros = ((df["GarageArea"] == 0) &
-                      (df["GarageCars"] == 0.0)).sum()
-    assert num_both_zeros == num_area_zeros == num_cars_zeros
-    for colname in ["GarageType", "GarageFinish", "GarageQual", "GarageCond"]:
-        num_total_nulls = df[colname].isna().sum()
-        num_nulls_when_area_and_cars_capacity_is_zero = (
-            df[(df["GarageArea"] == 0.0) & (df["GarageCars"] == 0.0)][colname]
-            .isna()
-            .sum()
-        )
-        num_nulls_when_area_and_cars_capacity_is_not_zero = (
-            df[(df["GarageArea"] != 0.0) & (df["GarageCars"] != 0.0)][colname]
-            .isna()
-            .sum()
-        )
-        assert num_total_nulls == num_nulls_when_area_and_cars_capacity_is_zero
-        assert num_nulls_when_area_and_cars_capacity_is_not_zero == 0
-        df[colname] = df[colname].fillna("No Ga")
-
-    num_total_nulls = df["GarageYrBlt"].isna().sum()
-    num_nulls_when_area_and_cars_is_zero = (
-        df[(df["GarageArea"] == 0.0) & (df["GarageCars"] == 0.0)]["GarageYrBlt"]
-        .isna()
-        .sum()
-    )
-    num_nulls_when_area_and_cars_is_not_zero = (
-        df[(df["GarageArea"] != 0.0) & (df["GarageCars"] != 0.0)]["GarageYrBlt"]
-        .isna()
-        .sum()
-    )
-    assert num_nulls_when_area_and_cars_is_zero == num_total_nulls
-    assert num_nulls_when_area_and_cars_is_not_zero == 0
-    df["GarageYrBlt"].where(
-        ~df["GarageYrBlt"].isna(), other=df["YrSold"] + 1, inplace=True
-    )
-
-    return df
-
-
-def _fix_lot_frontage(df):
-    assert (df["LotFrontage"] == 0).sum() == 0
-    df["LotFrontage"].fillna(0, inplace=True)
-    return df
-
-
-def _fix_alley(df):
-    df["Alley"].fillna("NA", inplace=True)
-    return df
-
-
-def _fix_fence(df):
-    df["Fence"].fillna("NF", inplace=True)
-    return df
-
-
 def _fix_masvnr_variables(df):
     df = df.dropna(subset=["MasVnrType", "MasVnrArea"])
     df = df[~((df["MasVnrType"] == "None") & (df["MasVnrArea"] != 0.0))]
@@ -220,7 +158,7 @@ def get_binary_column_names() -> t.List[str]:
 
 
 def get_numeric_column_names(json_path: str) -> t.List[str]:
-    with open(json_path) as json_file:
+    with open(json_path, encoding='utf-8') as json_file:
         cols_dict = json.load(json_file)
     return cols_dict['float_cols']
 

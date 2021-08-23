@@ -31,7 +31,7 @@ def train(config_file: str):
     X, y = _get_dataset(_load_config(config_file, "data"),
                         splits=[split])[split]
     estimator = model.build_estimator(estimator_config)
-    if estimator.named_steps['catboost']:
+    if 'catboost' in estimator.named_steps.keys():
         estimator = estimator.named_steps['catboost']
         estimator.fit(
             X, y, cat_features=data.get_categorical_column_names('modelcols_1.json'))
@@ -97,6 +97,7 @@ def define_x_y_groups(df):
     groups = df.AÑO_CAMPAÑA.map(map_dict)
     y = df.CANTPED
     X = df.drop(['CANTPED', "AÑO_CAMPAÑA"], axis=1)
+    print(X)
     return X, y, groups
 
 
