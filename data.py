@@ -21,19 +21,19 @@ SplitName = te.Literal["train", "test"]
 
 def get_dataset(reader: DatasetReader, splits: t.Iterable[SplitName]):
     df = reader()
-    #df = clean_dataset(df)
+    # df = clean_dataset(df)
     print(df.columns)
     y = df["CANTPED"]
     X = df.drop(columns=['CANTPED', "AÑO_CAMPAÑA"])
     X = X.astype(
-        {k: str for k in get_categorical_column_names('modelcols_1.json')})
+        {k: str for k in get_categorical_column_names('modelcols_2.json')})
     X, y, groups = define_x_y_groups(df)
     training_group = list(set(groups))[:-2]
-    #validation_group = list(set(groups))[-8]
+    # validation_group = list(set(groups))[-8]
     test_group = [list(set(groups))[-2]]
 
     training_indices = np.where(groups.isin(training_group))[0]
-    #validation_indices = np.where(groups.isin(validation_group))[0]
+    # validation_indices = np.where(groups.isin(validation_group))[0]
     test_indices = np.where(groups.isin(test_group))[0]
 
     X_train, X_test, y_train, y_test = X.iloc[training_indices], X.iloc[
@@ -177,6 +177,9 @@ def get_column_names() -> t.List[str]:
             'DESCRIPCIONBENEFICIO',
             'COL1',
             'RANGO_PRECIO',
+            'MesIni',
+            'MesFin',
+            'QUINCENA',
             'CANTPED',
             'REFERENCIA',
             'H_TALLA',
@@ -198,27 +201,13 @@ def get_column_names() -> t.List[str]:
             'H_COL1',
             'A_COL1',
             'H_RANGO_PRECIO',
-            'A_RANGO_PRECIO']
+            'A_RANGO_PRECIO',
+            'DURACION_DIAS']
 
 
 def get_categorical_variables_values_mapping() -> t.Dict[str, t.Sequence[str]]:
-    return {'TALLA': {'10',
-                      '12',
-                      '14',
-                      '16',
-                      '30',
-                      '32',
-                      '34',
-                      '36',
-                      '6',
-                      '8',
-                      'L',
-                      'M',
-                      'OTRO',
-                      'S',
-                      'XL',
-                      'XS',
-                      'XXL'},
+    return {'TALLA': {'10', '12', '14', '30', '32', '34', '36', '6', '8', 'L', 'M',
+                      'OTRO', 'S', 'XL', 'XS', '16', 'XXL'},
             'EVENTO': {'OTRO', 'SIN', 'SUPERGANGA'},
             'ESTADO': {'D', 'E', 'EE', 'N', 'NP', 'S'},
             'DESCRIPCIONMARCA': {'ROPA EXT FEMENINA',
@@ -267,4 +256,11 @@ def get_categorical_variables_values_mapping() -> t.Dict[str, t.Sequence[str]]:
                              '60000',
                              '70000',
                              '80000',
-                             '90000'}}
+                             '90000'},
+            'MesIni': {12,  1,  2,  3,
+                       4,  5,  6,  7,  8,
+                       9, 10, 11},
+            'MesFin': {1,  2,  3,
+                       4,  5,  6,  7,  8,
+                       9, 10, 11, 12},
+            'QUINCENA': {2, 1}}

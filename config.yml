@@ -10,9 +10,10 @@ estimator:
     params:
       one_hot: true
       force_dense_array: false
-      #additional_pass_through_columns:
+      additional_pass_through_columns:
   - name: standard-scaler
-    params: {}
+    params:
+      with_mean : False
   #- name: linear-regressor
   #  params: {}
   #- name: ridge-regressor
@@ -21,12 +22,15 @@ estimator:
   #    solver: saga
   - name: random-forest-regressor
     params:
-      max_depth: 256
+      max_depth: 128
       max_features: log2
       n_estimators: 512
+  #    max_depth: 256
+  #    max_features: log2
+  #    n_estimators: 512
 
 data:
-  filepath: ./df_1.csv
+  filepath: ./df_2.csv
 
 metrics:
   - name: custom prediction error

@@ -34,7 +34,7 @@ def train(config_file: str):
     if 'catboost' in estimator.named_steps.keys():
         estimator = estimator.named_steps['catboost']
         estimator.fit(
-            X, y, cat_features=data.get_categorical_column_names('modelcols_1.json'))
+            X, y, cat_features=data.get_categorical_column_names('modelcols_2.json'))
     else:
         estimator.fit(X, y)
     output_dir = _load_config(config_file, "export")["output_dir"]

@@ -173,7 +173,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
 
     def _get_pass_through_columns(self):
         pass_through_columns = data.get_numeric_column_names(
-            'modelcols_1.json')
+            'modelcols_2.json')
         if self.additional_pass_through_columns is not None:
             pass_through_columns = (
                 pass_through_columns + self.additional_pass_through_columns
